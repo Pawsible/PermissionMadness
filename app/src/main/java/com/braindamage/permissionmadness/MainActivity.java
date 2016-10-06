@@ -10,6 +10,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,18 +43,15 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
         setContentView(R.layout.activity_main);
 
         textView = (TextView) findViewById(R.id.textView);
+        buildGoogleApiClient();
 
-        checkLocationSettings();
+        checkLocationPermission();
 
     }
 
-    private void checkLocationSettings() {
+    public void checkLocationSettings() {
 
-        GoogleApiClient googleClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addApi(LocationServices.API)
-                .addOnConnectionFailedListener(this)
-                .build();
+
 
         LocationSettingsRequest.Builder locationSettingsBuilder = new LocationSettingsRequest.Builder()
                 .addLocationRequest(new LocationRequest().setInterval(5000)).setAlwaysShow(true);
@@ -67,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
                 Status status = locationSettingsResult.getStatus();
                 switch (status.getStatusCode()) {
                     case LocationSettingsStatusCodes.SUCCESS:
-                        checkLocationPermission();
+
                         break;
                     case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
                         try {
@@ -90,8 +88,17 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_CODE);
         } else {
+            buildGoogleApiClient();
             googleClient.connect();
         }
+    }
+
+    private void buildGoogleApiClient() {
+        googleClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addApi(LocationServices.API)
+                .addOnConnectionFailedListener(this)
+                .build();
     }
 
     @Override
@@ -100,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
             case RESOLUTION_CODE:
                 switch (resultCode) {
                     case RESULT_OK:
-                        checkLocationPermission();
+                        displayText();
                         break;
                     case RESULT_CANCELED:
                         Toast.makeText(MainActivity.this, "Location is required, turn it on", Toast.LENGTH_SHORT).show();
@@ -110,20 +117,8 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_CODE:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    googleClient.connect();
-                } else {
-                    Toast.makeText(MainActivity.this, "Error Activty", Toast.LENGTH_LONG).show();
-                }
-        }
-    }
+    private void displayText() {
 
-    @Override
-    public void onConnected(@Nullable Bundle bundle) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -139,13 +134,31 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    buildGoogleApiClient();
+                    googleClient.connect();
+                } else {
+                    Toast.makeText(MainActivity.this, "Error Activty", Toast.LENGTH_LONG).show();
+                }
+        }
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        checkLocationSettings();
+    }
+
+    @Override
     public void onConnectionSuspended(int i) {
 
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
+        Log.d("ConnectionFailed", connectionResult.getErrorMessage());
     }
 
     @Override
