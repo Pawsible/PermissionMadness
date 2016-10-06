@@ -57,10 +57,11 @@ public class MainActivity extends AppCompatActivity implements ConnectionCallbac
 
         LocationSettingsRequest.Builder locationSettingsBuilder = new LocationSettingsRequest.Builder()
                 .addLocationRequest(new LocationRequest().setInterval(5000)).setAlwaysShow(true);
-
+                
         PendingResult<LocationSettingsResult> result = LocationServices.SettingsApi.checkLocationSettings(googleClient
                 , locationSettingsBuilder.build());
-
+                
+        //onResult callback is never called. Please Help 
         result.setResultCallback(new ResultCallback<LocationSettingsResult>() {
             @Override
             public void onResult(@NonNull LocationSettingsResult locationSettingsResult) {
